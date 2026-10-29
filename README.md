@@ -1,73 +1,89 @@
-# Ganpat University AI Chatbot
+# Ganpat University AI Chatbot (RAG Model in Node.js)
 
-AI campus assistant for **Ganpat University**. A static chat page plus a Node.js serverless API, built to deploy on **Vercel**. Answers are grounded in the college knowledge base (RAG) and fall back to general AI knowledge when the knowledge base has nothing relevant.
+AI campus assistant for **Ganpat University (GUNI)**. A static chat frontend plus a high-performance Node.js serverless API built for local use or deployment on **Vercel**. Answers are strictly grounded in the university's scraped knowledge base (Excel files stored in `docs/`), with strict guardrails preventing out-of-the-box / general questions from being answered.
 
 ---
 
-## Quick start (local)
+## Key Features
+
+1. **RAG (Retrieval-Augmented Generation) in Node.js**:
+   - Custom in-memory vector store using fast Float32 cosine distance computation in Node.js.
+   - Text embeddings via OpenRouter (`openai/text-embedding-3-small`, 1536 dimensions).
+   - Chat completion via OpenRouter (`google/gemini-2.5-flash`).
+2. **University Knowledge Base (`docs/`)**:
+   - Ingests all scraped university spreadsheets directly from `docs/`:
+     - `guni_qa_dataset.xlsx`: Structured Q&A on campus facilities, hostels, bus routes, UVPCE, VMPIM, SKPCPER, admissions, placements, etc.
+     - `guni_raw_scraped_data.xlsx`: Scraped pages from the official Ganpat University website (admissions, PhD, marine programs, paramedical, certificates).
+3. **Strict Out-of-the-Box Guardrails**:
+   - Unrelated questions (coding, general knowledge, math, other colleges) are blocked at both retrieval and prompt layers.
+   - Zero hallucination: The assistant only answers queries supported by verified university context.
+   - Greetings (e.g. "Hi", "Hello") receive a friendly campus assistant welcome.
+4. **Citations & Sources**:
+   - Cites official source titles and URLs so students can verify information.
+
+---
+
+## Quick Start (Local)
 
 Requires **Node.js 20.6+** and an **OpenRouter API key**.
 
 ```bash
-npm install            # only installs the Excel reader used by the ingest script
-cp .env.example .env   # then put your OPENROUTER_API_KEY in .env
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+# Ensure OPENROUTER_API_KEY is configured in .env
+
+# 3. Ingest university Excel data from docs/
+npm run ingest
+
+# 4. Start local development server
 npm run dev            # http://localhost:3000
 ```
 
-`npm run dev` runs `dev-server.js`, which serves `public/` and runs the `api/` functions the same way Vercel does.
+`npm run dev` starts `dev-server.js`, serving `public/` and executing the `api/` endpoints locally.
 
 ---
 
-## Deploy to Vercel
+## Updating or Re-indexing the Knowledge Base
 
-1. Push this folder to a GitHub repository and import it in Vercel (or run `npx vercel` from this folder).
-2. Framework preset: **Other**. No build command is needed; `vercel.json` already sets the output folder to `public`.
-3. Under **Settings → Environment Variables**, add:
-   - `OPENROUTER_API_KEY` (required)
-   - `LLM_MODEL` (optional, default `google/gemini-2.5-flash`)
-   - `CHAT_HISTORY_WINDOW` (optional, default `5`)
-   - For admin sign-in (optional): `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `AUTH_SECRET`, and optionally `ADMIN_NAME`, `ADMIN_EMAIL`
-4. Deploy. Check `https://<your-app>.vercel.app/api/health`; it should report `knowledge_base_documents: 2699` and `openrouter_configured: true`.
-
-`.vercelignore` keeps `.env`, `node_modules` and the source spreadsheets out of the upload.
-
----
-
-## Updating the knowledge base
-
-Vercel can't save files at runtime, so re-indexing runs on your computer:
-
+To re-index all spreadsheets in `docs/`:
 ```bash
-npm run ingest -- path/to/knowledge_base.xlsx
+npm run ingest
 ```
 
-This rebuilds `data/vector_cache.bin` and `data/vector_meta.json`. Commit and redeploy to publish them. Sheets with `Question` and `Answer` columns become Q&A entries; other sheets use every non-empty column.
+Or target a specific file or folder:
+```bash
+npm run ingest -- docs/guni_qa_dataset.xlsx
+npm run ingest -- path/to/another_folder/
+```
+
+This updates `data/vector_cache.bin` and `data/vector_meta.json`.
 
 ---
 
-## Project layout
+## Project Structure
 
 ```
-public/
-  index.html        Chat page (history, edit question, voice input, sign-in card)
-  login.html        Admin sign-in page
-api/                Vercel serverless functions
-  chat.js           POST { message, history } -> { answer, sources }
-  health.js         GET status and knowledge-base size
-  warmup.js         GET, loads the knowledge base into memory
-  login.js / logout.js / me.js   Admin sign-in with a signed cookie
-  _lib/             Shared code (not exposed as endpoints)
-    vectorStore.js  Loads data/vector_* and runs cosine-similarity search
-    llm.js          OpenRouter embeddings and chat calls, prompts and guardrails
-    rag.js          Retrieval (top 3, distance <= 0.6) and answer orchestration
-    auth.js         Credential check and signed session cookie
-data/
+docs/               Source university Excel spreadsheets (scraped data & Q&As)
+  guni_qa_dataset.xlsx
+  guni_raw_scraped_data.xlsx
+data/               Vector index generated by scripts/ingest.js
   vector_cache.bin  Embeddings (float32, 1536 dimensions)
-  vector_meta.json  Text and metadata for each embedding
-scripts/ingest.js   Excel -> knowledge base
-dev-server.js       Local server mirroring Vercel
-vercel.json         Vercel config
+  vector_meta.json  Metadata and text for each chunk
+public/             Frontend web application
+  index.html        Chat interface (suggestions, voice input, markdown rendering)
+  login.html        Admin sign-in page
+api/                Node.js serverless API endpoints
+  chat.js           POST { message, history } -> { answer, sources }
+  health.js         GET status and knowledge-base document count
+  warmup.js         GET, warms in-memory vector store
+  _lib/             Core RAG modules
+    vectorStore.js  In-memory float32 cosine similarity engine
+    rag.js          RAG coordinator (retrieval, filtering, context assembly)
+    llm.js          OpenRouter API client (embeddings, completions, guardrails)
+scripts/
+  ingest.js         Multi-file Excel parser, semantic chunker, and embedding generator
+dev-server.js       Local development server
+vercel.json         Vercel deployment configuration
 ```
-
-Conversation history is stored in the browser and sent with each question, because serverless functions don't keep memory between requests.
-

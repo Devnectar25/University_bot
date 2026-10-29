@@ -2,8 +2,16 @@
 
 # Secrets: set these in the Vercel dashboard instead
 .env
+.env*.local
 
-# Source spreadsheets are only used locally by scripts/ingest.js
+# Source spreadsheets and documents are only used locally by scripts/ingest.js
 data/*.xlsx
+docs/
 
-node_modules
+# Temporary and Office lock files
+*.tmp
+*.temp
+~$*.xlsx
+~$*.xls
+
+node_modules/

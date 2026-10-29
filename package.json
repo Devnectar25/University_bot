@@ -1,0 +1,17 @@
+{
+  "name": "ganpat-university-chatbot",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Ganpat University RAG chatbot - static frontend + Node.js serverless API for Vercel",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env dev-server.js",
+    "start": "node --env-file-if-exists=.env dev-server.js",
+    "ingest": "node --env-file-if-exists=.env scripts/ingest.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}

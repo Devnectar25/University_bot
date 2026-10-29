@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Secrets
+.env
+
+# Vercel CLI
+.vercel
+
+# Temp files from scripts/ingest.js
+data/*.tmp
+
+# Logs and OS / editor files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

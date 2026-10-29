@@ -1,0 +1,9 @@
+# Only public/, api/, data/vector_* and package.json are needed on Vercel
+
+# Secrets: set these in the Vercel dashboard instead
+.env
+
+# Source spreadsheets are only used locally by scripts/ingest.js
+data/*.xlsx
+
+node_modules

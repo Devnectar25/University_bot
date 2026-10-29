@@ -1,19 +1,52 @@
 # Dependencies
 node_modules/
+package-lock.json.backup
 
-# Secrets
+# Environment and local configurations (keep .env.example tracked)
 .env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
 
-# Vercel CLI
-.vercel
+# Vercel & build outputs
+.vercel/
+dist/
+build/
+.cache/
 
-# Temp files from scripts/ingest.js
+# Ingestion temporary files & Excel lock files
+*.tmp
+*.temp
+*.bak
 data/*.tmp
+data/*.temp
+~$*.xlsx
+~$*.xls
 
-# Logs and OS / editor files
+# Logs and runtime debug files
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Operating System and IDE files
 .DS_Store
-Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+[Tt]humbs.db
+ehthumbs.db
+[Dd]esktop.ini
 .idea/
 .vscode/
+*.sublime-project
+*.sublime-workspace
 *.swp
+*.swo
+*~

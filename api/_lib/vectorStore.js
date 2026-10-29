@@ -44,12 +44,17 @@ function load() {
   return store;
 }
 
+function reload() {
+  store = null;
+  return load();
+}
+
 function count() {
   return load().items.length;
 }
 
 // Returns the k closest items by cosine distance (1 - cosine similarity), closest first
-function query(queryVec, k = 3) {
+function query(queryVec, k = 4) {
   const { items, vectors, norms, dim } = load();
   if (!items.length) return [];
   if (queryVec.length !== dim) {
@@ -77,4 +82,4 @@ function query(queryVec, k = 3) {
   }));
 }
 
-module.exports = { load, count, query };
+module.exports = { load, reload, count, query };

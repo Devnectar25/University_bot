@@ -1,4 +1,5 @@
-// OpenRouter calls for embeddings, query translation, and multilingual chat answers
+// OpenRouter & Google Gemini calls for embeddings, query translation, and multilingual chat answers
+const fallbackManager = require('./fallbackManager');
 
 const GREETING_PATTERNS_EN = new Set([
   'hi', 'hello', 'hey', 'hola', 'good morning', 'good afternoon',
@@ -50,57 +51,69 @@ function isRetryableStatus(status) {
 }
 
 async function postOpenRouter(endpoint, payload, timeoutMs, label) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
+  const keys = fallbackManager.getOpenRouterKeys();
+  if (!keys.length) {
     throw new Error('OPENROUTER_API_KEY is not configured in environment.');
   }
 
   let lastErr;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const res = await fetch(`https://openrouter.ai/api/v1/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
-          'X-Title': 'Ganpat University Chatbot'
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(timeoutMs)
-      });
+  for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
+    const apiKey = keys[keyIdx];
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const res = await fetch(`https://openrouter.ai/api/v1/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
+            'X-Title': 'Ganpat University Chatbot'
+          },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(timeoutMs)
+        });
 
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        let parsedMessage = '';
-        try {
-          const parsed = JSON.parse(errText);
-          parsedMessage = parsed.error?.message || '';
-        } catch {}
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          let parsedMessage = '';
+          try {
+            const parsed = JSON.parse(errText);
+            parsedMessage = parsed.error?.message || '';
+          } catch {}
 
-        if (res.status === 402) {
-          lastErr = new Error(`OpenRouter insufficient credits (402): ${parsedMessage || errText}. Please visit https://openrouter.ai/settings/credits to add credits or update OPENROUTER_API_KEY.`);
+          if (res.status === 402) {
+            lastErr = new Error(`OpenRouter insufficient credits (402): ${parsedMessage || errText}. Please visit https://openrouter.ai/settings/credits to add credits or update OPENROUTER_API_KEY.`);
+            if (keyIdx < keys.length - 1) {
+              console.warn(`[OpenRouter Key ${keyIdx + 1}] Credits exhausted (402), failing over to next OpenRouter key...`);
+              break;
+            }
+            throw lastErr;
+          }
+
+          if (res.status === 429 && keyIdx < keys.length - 1) {
+            console.warn(`[OpenRouter Key ${keyIdx + 1}] Rate limited (429), failing over to next OpenRouter key...`);
+            break;
+          }
+
+          lastErr = new Error(`OpenRouter ${label} request failed (${res.status}): ${parsedMessage || errText}`);
+          if (isRetryableStatus(res.status) && attempt < MAX_RETRIES) {
+            console.warn(`${label}: HTTP ${res.status}, retrying...`);
+            continue;
+          }
           throw lastErr;
         }
 
-        lastErr = new Error(`OpenRouter ${label} request failed (${res.status}): ${parsedMessage || errText}`);
-        if (isRetryableStatus(res.status) && attempt < MAX_RETRIES) {
-          console.warn(`${label}: HTTP ${res.status}, retrying...`);
+        return await res.json();
+      } catch (err) {
+        if (err === lastErr) throw err;
+        const timedOut = err.name === 'TimeoutError' || err.name === 'AbortError';
+        lastErr = timedOut
+          ? new Error(`OpenRouter ${label} request timed out after ${timeoutMs}ms`)
+          : err;
+        if (attempt < MAX_RETRIES) {
+          console.warn(`${label}: ${lastErr.message}, retrying...`);
           continue;
         }
-        throw lastErr;
-      }
-
-      return await res.json();
-    } catch (err) {
-      if (err === lastErr) throw err;
-      const timedOut = err.name === 'TimeoutError' || err.name === 'AbortError';
-      lastErr = timedOut
-        ? new Error(`OpenRouter ${label} request timed out after ${timeoutMs}ms`)
-        : err;
-      if (attempt < MAX_RETRIES) {
-        console.warn(`${label}: ${lastErr.message}, retrying...`);
-        continue;
       }
     }
   }
@@ -153,7 +166,7 @@ function isPureGreeting(query, lang = 'en') {
   return false;
 }
 
-// Translates a Hindi or Marathi query into concise English keywords for vector retrieval
+// Translates a Hindi or Gujarati query into concise English keywords for vector retrieval
 async function translateQueryToEnglish(queryText) {
   const cacheKey = queryText.trim().toLowerCase();
   if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
@@ -165,25 +178,20 @@ async function translateQueryToEnglish(queryText) {
       "Output ONLY the English translated keywords, nothing else.\n" +
       `Question: ${queryText}`;
 
-    const data = await postOpenRouter(
-      'chat/completions',
-      {
-        model: process.env.LLM_MODEL || 'google/gemini-2.5-flash',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0,
-        max_tokens: 60,
-        reasoning: { enabled: false }
-      },
-      8000,
-      'query translation'
-    );
+    const result = await fallbackManager.generateChatCompletion({
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0,
+      maxTokens: 60,
+      timeoutMs: 8000,
+      label: 'query translation'
+    });
 
-    const translated = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    const result = translated ? translated.trim() : queryText;
+    const translated = result && result.text;
+    const finalResult = translated ? translated.trim() : queryText;
 
     if (translationCache.size > 2000) translationCache.clear();
-    translationCache.set(cacheKey, result);
-    return result;
+    translationCache.set(cacheKey, finalResult);
+    return finalResult;
   } catch (err) {
     console.warn('Query translation warning (falling back to original query):', err.message);
     return queryText;
@@ -231,29 +239,16 @@ async function getQueryEmbedding(text) {
   return embedding;
 }
 
-async function chatCompletion(messages, temperature) {
-  try {
-    const data = await postOpenRouter(
-      'chat/completions',
-      {
-        model: process.env.LLM_MODEL || 'google/gemini-2.5-flash',
-        messages,
-        temperature,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        reasoning: { enabled: false }
-      },
-      CHAT_TIMEOUT_MS,
-      'chat completions'
-    );
-
-    const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    return content ? content.trim() : "I couldn't generate a response. Please try asking again.";
-  } catch (err) {
-    if (err.message && err.message.includes('402')) {
-      return "⚠️ OpenRouter API credits are exhausted or low for the current token limit. Please visit https://openrouter.ai/settings/credits to add credits or update the OPENROUTER_API_KEY in your .env file.";
-    }
-    throw err;
-  }
+async function chatCompletion(messages, temperature, language = 'en') {
+  const result = await fallbackManager.generateChatCompletion({
+    messages,
+    temperature,
+    maxTokens: MAX_OUTPUT_TOKENS,
+    timeoutMs: CHAT_TIMEOUT_MS,
+    language,
+    label: 'chat completions'
+  });
+  return result.text;
 }
 
 function buildMessages(systemPrompt, history, finalUserContent) {
@@ -289,7 +284,7 @@ function generateAnswer(query, context, history = [], language = 'en') {
     `Format your responses cleanly using readable Markdown (bullet points, bold text).`;
 
   const userPrompt = `[Retrieved Context]:\n${context}\n\n[Student Question (${targetLang.name})]: ${query}`;
-  return chatCompletion(buildMessages(systemPrompt, history, userPrompt), 0.2);
+  return chatCompletion(buildMessages(systemPrompt, history, userPrompt), 0.2, language);
 }
 
 function generateGeneralAnswer(query, history = [], language = 'en') {

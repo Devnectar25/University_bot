@@ -54,6 +54,13 @@ async function handleApi(req, res, url) {
   }
 }
 
+process.on('uncaughtException', (err) => {
+  console.error('[Uncaught Exception]:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Unhandled Rejection]:', reason);
+});
+
 function handleStatic(req, res, url) {
   // Like Vercel's cleanUrls: /login serves login.html, / serves index.html
   let pathname = decodeURIComponent(url.pathname);
@@ -66,13 +73,29 @@ function handleStatic(req, res, url) {
     return res.end('Not found');
   }
   res.setHeader('Content-Type', MIME_TYPES[path.extname(file)] || 'application/octet-stream');
-  fs.createReadStream(file).pipe(res);
+  const stream = fs.createReadStream(file);
+  stream.on('error', (err) => {
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.end('Server error');
+    }
+  });
+  stream.pipe(res);
 }
 
 const server = http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  if (url.pathname.startsWith('/api/')) return handleApi(req, res, url);
-  return handleStatic(req, res, url);
+  try {
+    const host = req.headers.host || `localhost:${PORT}`;
+    const url = new URL(req.url, `http://${host}`);
+    if (url.pathname.startsWith('/api/')) return handleApi(req, res, url);
+    return handleStatic(req, res, url);
+  } catch (err) {
+    console.error('Request parsing error:', err);
+    if (!res.headersSent) {
+      res.statusCode = 400;
+      res.end('Bad Request');
+    }
+  }
 });
 
 server.on('error', (err) => {

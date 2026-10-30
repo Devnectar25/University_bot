@@ -50,3 +50,19 @@ ehthumbs.db
 *.swp
 *.swo
 *~
+
+# Temporary test, debug, and scratch files
+scratch/
+*.scratch.*
+scripts/test-*.js
+scripts/check-*.js
+scripts/verify-*.js
+scripts/temp-*.js
+
+# Test and code coverage outputs
+coverage/
+.nyc_output/
+
+# Assistant and local tooling directories
+.antigravity/
+.gemini/

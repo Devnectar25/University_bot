@@ -34,9 +34,15 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: `Message is too long (max ${MAX_MESSAGE_CHARS} characters).` });
   }
 
+  const language = typeof body.language === 'string' ? body.language.toLowerCase().trim() : 'auto';
+
   try {
-    const result = await rag.answerQuestion(message, cleanHistory(body.history));
-    return res.status(200).json({ answer: result.answer, sources: result.sources });
+    const result = await rag.answerQuestion(message, cleanHistory(body.history), language);
+    return res.status(200).json({
+      answer: result.answer,
+      sources: result.sources,
+      language: result.language
+    });
   } catch (err) {
     console.error('Error generating chat answer:', err);
     return res.status(500).json({ error: 'The AI service encountered an error. Please try again in a few moments.' });

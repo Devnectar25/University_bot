@@ -69,10 +69,23 @@ function handleStatic(req, res, url) {
   fs.createReadStream(file).pipe(res);
 }
 
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (url.pathname.startsWith('/api/')) return handleApi(req, res, url);
   return handleStatic(req, res, url);
-}).listen(PORT, () => {
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[Server Error] Port ${PORT} is already in use by another process.`);
+    console.error(`To run on another port, set the PORT environment variable:`);
+    console.error(`  PowerShell: $env:PORT=3001; npm run dev`);
+    console.error(`  CMD:        set PORT=3001 && npm run dev\n`);
+    process.exit(1);
+  }
+  throw err;
+});
+
+server.listen(PORT, () => {
   console.log(`Ganpat University chatbot running at http://localhost:${PORT}`);
 });

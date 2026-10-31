@@ -82,7 +82,7 @@ window.GUNi.ChatFooter = function ChatFooter({
         return () => {
             try {
                 recognition.abort();
-            } catch {}
+            } catch { }
         };
     }, [currentLanguage, t]);
 
@@ -95,7 +95,7 @@ window.GUNi.ChatFooter = function ChatFooter({
         if (isListening) {
             try {
                 recognitionRef.current.stop();
-            } catch {}
+            } catch { }
             setIsListening(false);
         } else {
             try {
@@ -115,7 +115,7 @@ window.GUNi.ChatFooter = function ChatFooter({
         if (isListening && recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
-            } catch {}
+            } catch { }
         }
         onSend();
     };

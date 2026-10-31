@@ -1,9 +1,9 @@
 // UserCard.js - User profile display at bottom of sidebar (Guest / Signed-in)
 window.GUNi = window.GUNi || {};
 
-window.GUNi.UserCard = function UserCard({ user }) {
+window.GUNi.UserCard = function UserCard({ user, t }) {
     const isLoggedIn = !!(user && (user.name || user.username));
-    const displayName = isLoggedIn ? (user.name || user.username) : 'Guest';
+    const displayName = isLoggedIn ? (user.name || user.username) : (t?.guest || 'Guest');
     const displayEmail = isLoggedIn ? (user.email || user.username) : '';
     const avatarLetter = displayName.charAt(0).toUpperCase();
 

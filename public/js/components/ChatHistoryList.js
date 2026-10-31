@@ -33,6 +33,7 @@ window.GUNi.ChatHistoryList = function ChatHistoryList({ conversations, activeId
                     isActive={conv.id === activeId}
                     onSelect={onSelect}
                     onDelete={onDelete}
+                    t={t}
                 />
             ))}
 

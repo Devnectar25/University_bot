@@ -20,6 +20,13 @@ window.GUNi.App = function App() {
         }
     };
 
+    useEffect(() => {
+        if (t.pageTitle) {
+            document.title = t.pageTitle;
+        }
+        document.documentElement.lang = currentLanguage;
+    }, [currentLanguage, t]);
+
     // ── 2. Sidebar State ──────────────────────────────────────────────────────
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
         try { localStorage.removeItem('sidebar_collapsed'); } catch {}
@@ -114,6 +121,7 @@ window.GUNi.App = function App() {
     const [isTyping, setIsTyping] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [lastUserMessage, setLastUserMessage] = useState('');
+    const abortControllerRef = useRef(null);
 
     // Persist conversations to localStorage
     useEffect(() => {
@@ -248,10 +256,18 @@ window.GUNi.App = function App() {
             .slice(-HISTORY_TURNS_LIMIT)
             .map((m) => ({ role: m.sender, content: m.text }));
 
+        // Create AbortController for cancelable requests
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         try {
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     message: text,
                     history: historyContext,
@@ -268,6 +284,7 @@ window.GUNi.App = function App() {
                     id: 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
                     sender: 'assistant',
                     text: data.answer || '',
+                    sources: data.sources || [],
                     time: replyTime
                 };
 
@@ -307,6 +324,10 @@ window.GUNi.App = function App() {
                 setMessages((prev) => [...prev, errBubble]);
             }
         } catch (err) {
+            if (err.name === 'AbortError') {
+                console.log('Chat generation aborted by user.');
+                return;
+            }
             console.error('Chat error:', err);
             setIsTyping(false);
             const errTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -320,7 +341,59 @@ window.GUNi.App = function App() {
             setMessages((prev) => [...prev, errBubble]);
         } finally {
             setIsSending(false);
+            setIsTyping(false);
+            abortControllerRef.current = null;
         }
+    };
+
+    const handleStopGenerating = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+        setIsSending(false);
+        setIsTyping(false);
+    };
+
+    const handleRegenerate = (msgIndex) => {
+        if (isSending) return;
+        const targetIdx = (msgIndex !== undefined && msgIndex !== null)
+            ? msgIndex
+            : messages.length - 1;
+
+        let userMsgText = '';
+        let userMsgIndex = -1;
+
+        for (let i = targetIdx; i >= 0; i--) {
+            if (messages[i]?.sender === 'user') {
+                userMsgText = messages[i].text;
+                userMsgIndex = i;
+                break;
+            }
+        }
+
+        if (!userMsgText || userMsgIndex === -1) return;
+
+        // Keep messages before the user message, then re-send
+        const remaining = messages.slice(0, userMsgIndex);
+        setMessages(remaining);
+
+        if (activeChatId) {
+            setConversations((prev) => {
+                return prev.map((c) => {
+                    if (c.id === activeChatId) {
+                        return {
+                            ...c,
+                            messages: (c.messages || []).slice(0, userMsgIndex),
+                            updatedAt: Date.now()
+                        };
+                    }
+                    return c;
+                });
+            });
+        }
+
+        handleSend(userMsgText);
     };
 
     const handleSelectChip = (chipText) => {
@@ -359,6 +432,9 @@ window.GUNi.App = function App() {
     };
 
     const handleFeedback = (msgIndex, feedbackType) => {
+        const targetMsg = messages[msgIndex];
+        const prevUserMsg = messages.slice(0, msgIndex).reverse().find((m) => m.sender === 'user');
+
         setMessages((prev) => {
             const next = [...prev];
             if (next[msgIndex]) {
@@ -366,6 +442,21 @@ window.GUNi.App = function App() {
             }
             return next;
         });
+
+        // Send feedback to server for quality tracking and dataset enrichment
+        if (feedbackType && targetMsg) {
+            fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: feedbackType,
+                    query: prevUserMsg ? prevUserMsg.text : '',
+                    answer: targetMsg.text || '',
+                    language: currentLanguage,
+                    sources: targetMsg.sources || []
+                })
+            }).catch(() => {});
+        }
 
         if (activeChatId) {
             setConversations((prev) => {
@@ -426,6 +517,8 @@ window.GUNi.App = function App() {
                     inputText={inputText}
                     setInputText={setInputText}
                     onSend={() => handleSend()}
+                    onStopGenerating={handleStopGenerating}
+                    onRegenerate={handleRegenerate}
                     onFeedback={handleFeedback}
                 />
             </div>
@@ -433,12 +526,70 @@ window.GUNi.App = function App() {
     );
 };
 
+// Error Boundary to prevent any full white-screen crashes
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+    componentDidCatch(error, errorInfo) {
+        console.error('GUNi Assistant Caught Render Error:', error, errorInfo);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '100vh',
+                    padding: '2rem',
+                    textAlign: 'center',
+                    fontFamily: 'Inter, sans-serif',
+                    background: '#faf8f5',
+                    color: '#2d3748'
+                }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+                    <h2 style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Something went wrong</h2>
+                    <p style={{ maxWidth: '420px', color: '#718096', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                        The chat assistant encountered an unexpected error. Click below to reload and resume your session.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        style={{
+                            padding: '0.65rem 1.4rem',
+                            background: '#9c4126',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: 500,
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Reload Page
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 // Mount to DOM root
 (function mountApp() {
     const rootEl = document.getElementById('root');
     if (rootEl && window.ReactDOM) {
         const root = ReactDOM.createRoot(rootEl);
-        root.render(<window.GUNi.App />);
+        root.render(
+            <ErrorBoundary>
+                <window.GUNi.App />
+            </ErrorBoundary>
+        );
     }
 })();
 

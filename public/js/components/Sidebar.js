@@ -26,7 +26,7 @@ window.GUNi.Sidebar = function Sidebar({
             ></div>
 
             <aside className={`sidebar${isOpenMobile ? ' open' : ''}`} id="sidebar">
-                <window.GUNi.SidebarBrand onToggleSidebar={onToggleSidebar} />
+                <window.GUNi.SidebarBrand onToggleSidebar={onToggleSidebar} t={t} />
 
                 <button
                     type="button"
@@ -47,7 +47,7 @@ window.GUNi.Sidebar = function Sidebar({
                     t={t}
                 />
 
-                <window.GUNi.UserCard user={user} onLogout={onLogout} />
+                <window.GUNi.UserCard user={user} onLogout={onLogout} t={t} />
 
                 {/* Draggable handle for adjusting sidebar width on desktop */}
                 <div

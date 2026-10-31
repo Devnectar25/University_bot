@@ -15,6 +15,8 @@ window.GUNi.ChatPanel = function ChatPanel({
     inputText,
     setInputText,
     onSend,
+    onStopGenerating,
+    onRegenerate,
     onFeedback
 }) {
     return (
@@ -34,6 +36,7 @@ window.GUNi.ChatPanel = function ChatPanel({
                 onEditSubmit={onEditSubmit}
                 onRetry={onRetry}
                 isSending={isSending}
+                onRegenerate={onRegenerate}
                 onFeedback={onFeedback}
             />
 
@@ -41,6 +44,7 @@ window.GUNi.ChatPanel = function ChatPanel({
                 inputText={inputText}
                 setInputText={setInputText}
                 onSend={onSend}
+                onStopGenerating={onStopGenerating}
                 isSending={isSending}
                 t={t}
                 currentLanguage={currentLanguage}

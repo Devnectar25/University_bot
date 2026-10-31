@@ -1,7 +1,7 @@
 // ChatHistoryItem.js - Single chat history item with hover delete action
 window.GUNi = window.GUNi || {};
 
-window.GUNi.ChatHistoryItem = function ChatHistoryItem({ conversation, isActive, onSelect, onDelete }) {
+window.GUNi.ChatHistoryItem = function ChatHistoryItem({ conversation, isActive, onSelect, onDelete, t }) {
     return (
         <div className="history-row">
             <button
@@ -16,8 +16,8 @@ window.GUNi.ChatHistoryItem = function ChatHistoryItem({ conversation, isActive,
             <button
                 type="button"
                 className="history-delete"
-                title="Delete chat"
-                aria-label="Delete chat"
+                title={t?.deleteChat || "Delete chat"}
+                aria-label={t?.deleteChat || "Delete chat"}
                 onClick={(e) => {
                     e.stopPropagation();
                     onDelete(conversation.id);
@@ -28,4 +28,3 @@ window.GUNi.ChatHistoryItem = function ChatHistoryItem({ conversation, isActive,
         </div>
     );
 };
-

@@ -63,9 +63,11 @@ async function postOpenRouter(endpoint, payload, timeoutMs, label) {
       try {
         const res = await fetch(`https://openrouter.ai/api/v1/${endpoint}`, {
           method: 'POST',
+          keepalive: true,
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
+            'Connection': 'keep-alive',
             'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
             'X-Title': 'Ganpat University Chatbot'
           },

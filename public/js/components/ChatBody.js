@@ -11,6 +11,7 @@ window.GUNi.ChatBody = function ChatBody({
     onEditSubmit,
     onRetry,
     isSending,
+    onRegenerate,
     onFeedback
 }) {
     const chatBodyRef = useRef(null);
@@ -42,6 +43,9 @@ window.GUNi.ChatBody = function ChatBody({
     }, [messages, isTyping]);
 
     const hasMessages = messages && messages.length > 0;
+    const lastAssistantIdx = hasMessages
+        ? messages.map((m) => m.sender).lastIndexOf('assistant')
+        : -1;
 
     return (
         <div className="chat-body" id="chat-body" ref={chatBodyRef}>
@@ -57,7 +61,10 @@ window.GUNi.ChatBody = function ChatBody({
                             onEditSubmit={onEditSubmit}
                             onRetry={onRetry}
                             isSending={isSending}
+                            onRegenerate={onRegenerate}
+                            isLatestAssistant={idx === lastAssistantIdx}
                             onFeedback={onFeedback}
+                            t={t}
                         />
                     ))}
                     {isTyping && <window.GUNi.TypingIndicator />}

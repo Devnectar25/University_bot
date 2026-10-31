@@ -1,5 +1,6 @@
 const vectorStore = require('./vectorStore');
 const llm = require('./llm');
+const redisCache = require('./redisCache');
 
 const TOP_K = parseInt(process.env.RAG_TOP_K || '4', 10);
 // Maximum cosine distance (1 - similarity) for a snippet to count as relevant
@@ -103,7 +104,7 @@ async function retrieve(queryText, lang = 'en', history = []) {
     const searchKeywords = augmentSearchQuery(baseKeywords, history);
 
     let queryVec = await llm.getQueryEmbedding(searchKeywords);
-    let results = vectorStore.query(queryVec, TOP_K).filter(r => r.distance <= DISTANCE_THRESHOLD);
+    let results = vectorStore.query(queryVec, TOP_K, searchKeywords).filter(r => r.distance <= DISTANCE_THRESHOLD);
 
     // Typo & spelling mistake fallback: If no relevant results found, attempt query normalization
     if (!results.length) {
@@ -111,7 +112,7 @@ async function retrieve(queryText, lang = 'en', history = []) {
       if (corrected && corrected.toLowerCase() !== baseKeywords.toLowerCase()) {
         const fallbackKeywords = augmentSearchQuery(corrected, history);
         const fallbackVec = await llm.getQueryEmbedding(fallbackKeywords);
-        const fallbackResults = vectorStore.query(fallbackVec, TOP_K).filter(r => r.distance <= DISTANCE_THRESHOLD);
+        const fallbackResults = vectorStore.query(fallbackVec, TOP_K, fallbackKeywords).filter(r => r.distance <= DISTANCE_THRESHOLD);
         if (fallbackResults.length) {
           results = fallbackResults;
         }
@@ -160,6 +161,15 @@ async function answerQuestion(queryText, history = [], preferredLang = 'auto') {
     };
   }
 
+  // 1. Redis Cache Lookup (instant response & zero LLM cost)
+  const cached = await redisCache.get(queryText, lang, history);
+  if (cached && cached.answer) {
+    return {
+      ...cached,
+      cached: true
+    };
+  }
+
   const retrieval = await retrieve(queryText, lang, history);
   if (!retrieval.found) {
     // Strictly block out-of-the-box or non-university questions
@@ -172,7 +182,12 @@ async function answerQuestion(queryText, history = [], preferredLang = 'auto') {
   }
 
   const answer = await llm.generateAnswer(queryText, retrieval.context, history, lang);
-  return { answer, sources: retrieval.sources, found: true, language: lang };
+  const result = { answer, sources: retrieval.sources, found: true, language: lang };
+
+  // 2. Save answer in Redis cache for subsequent identical or semantically identical queries
+  await redisCache.set(queryText, lang, history, result);
+
+  return result;
 }
 
-module.exports = { answerQuestion, retrieve };
+module.exports = { answerQuestion, retrieve, redisCache };

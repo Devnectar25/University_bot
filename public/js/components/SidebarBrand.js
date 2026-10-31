@@ -1,7 +1,7 @@
 // SidebarBrand.js - University logo, branding and collapse/close toggle
 window.GUNi = window.GUNi || {};
 
-window.GUNi.SidebarBrand = function SidebarBrand({ onToggleSidebar }) {
+window.GUNi.SidebarBrand = function SidebarBrand({ onToggleSidebar, t }) {
     return (
         <div className="brand">
             <a
@@ -19,16 +19,16 @@ window.GUNi.SidebarBrand = function SidebarBrand({ onToggleSidebar }) {
                     />
                 </div>
                 <div className="brand-titles">
-                    <div className="brand-name">GUNi Assistant</div>
-                    <div className="brand-sub">Ganpat University, Mehsana</div>
+                    <div className="brand-name">{t?.brandName || 'GUNi Assistant'}</div>
+                    <div className="brand-sub">{t?.brandSub || 'Ganpat University, Mehsana'}</div>
                 </div>
             </a>
             <button
                 type="button"
                 className="sidebar-toggle-btn"
                 id="sidebar-collapse-btn"
-                title="Hide sidebar"
-                aria-label="Hide sidebar"
+                title={t?.toggleSidebar || "Hide sidebar"}
+                aria-label={t?.toggleSidebar || "Hide sidebar"}
                 onClick={onToggleSidebar}
             >
                 <i className="bi bi-layout-sidebar-inset"></i>
@@ -37,4 +37,3 @@ window.GUNi.SidebarBrand = function SidebarBrand({ onToggleSidebar }) {
         </div>
     );
 };
-

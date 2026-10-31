@@ -1,4 +1,5 @@
 const vectorStore = require('./_lib/vectorStore');
+const redisCache = require('./_lib/redisCache');
 
 module.exports = (req, res) => {
   let documents = null;
@@ -8,6 +9,7 @@ module.exports = (req, res) => {
     status: 'OK',
     timestamp: new Date().toISOString(),
     knowledge_base_documents: documents,
-    openrouter_configured: Boolean(process.env.OPENROUTER_API_KEY)
+    openrouter_configured: Boolean(process.env.OPENROUTER_API_KEY),
+    cache: redisCache.getStats()
   });
 };

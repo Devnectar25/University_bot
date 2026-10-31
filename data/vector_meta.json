@@ -1,6 +1,6 @@
 {
-  "mtime": 1793267977468,
-  "count": 444,
+  "mtime": 1793450560718,
+  "count": 448,
   "sources": [
     "guni_qa_dataset.xlsx",
     "guni_raw_scraped_data.xlsx"
@@ -57,7 +57,7 @@
         "doc_type": "qa",
         "chunk_index": 2,
         "total_chunks": 3,
-        "char_length": 256
+        "char_length": 276
       }
     },
     {
@@ -93,7 +93,7 @@
         "doc_type": "qa",
         "chunk_index": 1,
         "total_chunks": 2,
-        "char_length": 579
+        "char_length": 599
       }
     },
     {
@@ -129,7 +129,7 @@
         "doc_type": "qa",
         "chunk_index": 1,
         "total_chunks": 2,
-        "char_length": 278
+        "char_length": 298
       }
     },
     {
@@ -165,7 +165,7 @@
         "doc_type": "qa",
         "chunk_index": 1,
         "total_chunks": 2,
-        "char_length": 351
+        "char_length": 356
       }
     },
     {
@@ -183,7 +183,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 634
+        "char_length": 639
       }
     },
     {
@@ -201,7 +201,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 497
+        "char_length": 502
       }
     },
     {
@@ -219,7 +219,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 823
+        "char_length": 831
       }
     },
     {
@@ -237,7 +237,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 489
+        "char_length": 497
       }
     },
     {
@@ -255,7 +255,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 774
+        "char_length": 792
       }
     },
     {
@@ -273,7 +273,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 641
+        "char_length": 660
       }
     },
     {
@@ -561,7 +561,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 706
+        "char_length": 719
       }
     },
     {
@@ -579,7 +579,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 756
+        "char_length": 769
       }
     },
     {
@@ -597,7 +597,7 @@
         "doc_type": "qa",
         "chunk_index": 0,
         "total_chunks": 1,
-        "char_length": 445
+        "char_length": 458
       }
     },
     {
@@ -1645,6 +1645,78 @@
       }
     },
     {
+      "id": "doc_guni_qa_dataset_xlsx_Sheet1_row_75_chunk_0",
+      "text": "Question: How many streams are available at Ganpat University?\nAnswer: Ganpat University offers academic programs across 8+ major faculties and streams:\n1. Engineering & Technology (U.V. Patel College of Engineering - UVPCE): B.Tech, M.Tech, and Diploma in Computer Engineering, AI, Cyber Security, Mechanical, Civil, Electrical, and Biomedical.\n2. Management Studies (V.M. Patel Institute of Management - VMPIM): MBA, BBA, B.Com, and Executive Management.\n3. Computer Science & Applications: BCA, MCA, B.Sc IT, M.Sc IT, and Cloud Computing.\n4. Pharmacy & Healthcare (S.K. Patel College of Pharmaceutical Education & Research - SKPCPER): B.Pharm, M.Pharm, and Pharm.D.\n5. Sciences (Mehsana Urban Institute of Sciences - MUIS): B.Sc and M.Sc in Biotechnology, Microbiology, Chemistry, Physics, and Mathematics.\n6. Agriculture & Allied Sciences: B.Sc (Hons.) Agriculture approved as per ICAR",
+      "metadata": {
+        "source": "guni_qa_dataset.xlsx",
+        "sheet_name": "Sheet1",
+        "row_id": 75,
+        "category": "ACADEMIC & PROGRAMS",
+        "page_title": "Academic Streams & Faculties",
+        "section": "",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
+        "department": "N/A",
+        "doc_type": "qa",
+        "chunk_index": 0,
+        "total_chunks": 2,
+        "char_length": 889
+      }
+    },
+    {
+      "id": "doc_guni_qa_dataset_xlsx_Sheet1_row_75_chunk_1",
+      "text": "Question: How many streams are available at Ganpat University?\nin Biotechnology, Microbiology, Chemistry, Physics, and Mathematics.\n6. Agriculture & Allied Sciences: B.Sc (Hons.) Agriculture approved as per ICAR guidelines.\n7. Marine Engineering & Maritime Studies: DG Shipping approved maritime courses including Marine Engineering, GP Rating, and ETO.\n8. Healthcare, Nursing & Physiotherapy: B.Sc Nursing, GNM, and Allied Health Sciences.\nCategory: ACADEMIC & PROGRAMS\nSource Page: Academic Streams & Faculties\nURL: https://www.ganpatuniversity.ac.in/admission",
+      "metadata": {
+        "source": "guni_qa_dataset.xlsx",
+        "sheet_name": "Sheet1",
+        "row_id": 75,
+        "category": "ACADEMIC & PROGRAMS",
+        "page_title": "Academic Streams & Faculties",
+        "section": "",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
+        "department": "N/A",
+        "doc_type": "qa",
+        "chunk_index": 1,
+        "total_chunks": 2,
+        "char_length": 562
+      }
+    },
+    {
+      "id": "doc_guni_qa_dataset_xlsx_Sheet1_row_76_chunk_0",
+      "text": "Question: Which academic streams, courses and fields can I study at Ganpat University?\nAnswer: Ganpat University provides more than 150+ undergraduate (UG), postgraduate (PG), diploma, and doctoral (Ph.D.) degree programs across 8 core academic streams: Engineering & Technology, Computer Applications, Management, Pharmacy, Applied Sciences, Agriculture, Marine Engineering, and Healthcare/Nursing.\nCategory: ACADEMIC & PROGRAMS\nSource Page: Programs Overview\nURL: https://www.ganpatuniversity.ac.in/admission",
+      "metadata": {
+        "source": "guni_qa_dataset.xlsx",
+        "sheet_name": "Sheet1",
+        "row_id": 76,
+        "category": "ACADEMIC & PROGRAMS",
+        "page_title": "Programs Overview",
+        "section": "",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
+        "department": "N/A",
+        "doc_type": "qa",
+        "chunk_index": 0,
+        "total_chunks": 1,
+        "char_length": 510
+      }
+    },
+    {
+      "id": "doc_guni_qa_dataset_xlsx_Sheet1_row_77_chunk_0",
+      "text": "Question: How many faculties or departments are there at Ganpat University?\nAnswer: Ganpat University comprises multiple prominent constituent faculties and institutes:\n- Faculty of Engineering & Technology (UVPCE)\n- Faculty of Management Studies (VMPIM)\n- Faculty of Computer Applications\n- Faculty of Pharmacy (SKPCPER)\n- Faculty of Science (MUIS)\n- Faculty of Agriculture & Allied Sciences\n- Marine Engineering & Maritime Training Center\n- Faculty of Social Sciences, Humanities & Nursing\nCategory: ACADEMIC & PROGRAMS\nSource Page: Faculties & Institutes\nURL: https://www.ganpatuniversity.ac.in/faculty",
+      "metadata": {
+        "source": "guni_qa_dataset.xlsx",
+        "sheet_name": "Sheet1",
+        "row_id": 77,
+        "category": "ACADEMIC & PROGRAMS",
+        "page_title": "Faculties & Institutes",
+        "section": "",
+        "url": "https://www.ganpatuniversity.ac.in/faculty",
+        "department": "N/A",
+        "doc_type": "qa",
+        "chunk_index": 0,
+        "total_chunks": 1,
+        "char_length": 605
+      }
+    },
+    {
       "id": "doc_guni_raw_scraped_data_xlsx_Sheet1_row_2_chunk_0",
       "text": "University Page: Admission\nURL: https://www.ganpatuniversity.ac.in/admission\nContent: Placement inside CRED (LPA*: 7.2) in B.Tech Computer Science & Engineering (CBA) Placement inside CRED (LPA*: 7.2) in B.Tech Computer Science & Engineering (CBA)",
       "metadata": {
@@ -1654,7 +1726,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/campus-facilities",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1672,7 +1744,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/campus-facilities",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1690,7 +1762,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/campus-facilities",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1708,7 +1780,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/hostel-facility",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1726,7 +1798,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/hostel-facility",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1744,7 +1816,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/hostel-facility",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1762,7 +1834,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/transport-facility",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1780,7 +1852,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/transport-facility",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1798,7 +1870,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/sports-facility",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -1816,7 +1888,7 @@
         "category": "Admission",
         "page_title": "Admission",
         "section": "",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/library-facility",
+        "url": "https://www.ganpatuniversity.ac.in/admission",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -2086,7 +2158,7 @@
         "category": "BASIC TRAINING FOR LIQUIFIED GAS TANKER CARGO OPERATIONS  GUNI",
         "page_title": "BASIC TRAINING FOR LIQUIFIED GAS TANKER CARGO OPERATIONS  GUNI",
         "section": "Fees",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/placements",
+        "url": "https://www.ganpatuniversity.ac.in/programmes/certificate-courses/engineering-technology/basic-training-for-liquified-gas-tanker-cargo-operations",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -2104,7 +2176,7 @@
         "category": "BASIC TRAINING FOR LIQUIFIED GAS TANKER CARGO OPERATIONS  GUNI",
         "page_title": "BASIC TRAINING FOR LIQUIFIED GAS TANKER CARGO OPERATIONS  GUNI",
         "section": "Program Details",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/placements",
+        "url": "https://www.ganpatuniversity.ac.in/programmes/certificate-courses/engineering-technology/basic-training-for-liquified-gas-tanker-cargo-operations",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,
@@ -2122,7 +2194,7 @@
         "category": "Basic STCW Safety Training Course[BST=EFA+FPFF+PST+PSSR]  GUNI",
         "page_title": "Basic STCW Safety Training Course[BST=EFA+FPFF+PST+PSSR]  GUNI",
         "section": "Fees",
-        "url": "https://www.ganpatuniversity.ac.in/campus-lifes/placements",
+        "url": "https://www.ganpatuniversity.ac.in/programmes/certificate-courses/engineering-technology/basic-stcw-safety-training-coursebstefafpffpstpssr",
         "department": "N/A",
         "doc_type": "scraped_page",
         "chunk_index": 0,

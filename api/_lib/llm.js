@@ -198,6 +198,35 @@ async function translateQueryToEnglish(queryText) {
   }
 }
 
+// Normalizes typos and spelling mistakes for short or mis-typed student queries
+async function normalizeOrCorrectQuery(queryText) {
+  if (!queryText || typeof queryText !== 'string') return queryText;
+  const cacheKey = `typo:${queryText.trim().toLowerCase()}`;
+  if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
+
+  try {
+    const prompt =
+      "Correct any spelling mistakes or typos in the following student question. " +
+      "Keep the original intent and numbers intact. Output ONLY the corrected text, nothing else.\n" +
+      `Question: ${queryText}`;
+
+    const result = await fallbackManager.generateChatCompletion({
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0,
+      maxTokens: 50,
+      timeoutMs: 5000,
+      label: 'typo correction'
+    });
+
+    const corrected = result && result.text ? result.text.trim() : queryText;
+    if (translationCache.size > 2000) translationCache.clear();
+    translationCache.set(cacheKey, corrected);
+    return corrected;
+  } catch (err) {
+    return queryText;
+  }
+}
+
 // Embeds a list of texts in batches, keeping input order
 async function embedTexts(texts, batchSize = 128) {
   const all = [];
@@ -300,6 +329,7 @@ module.exports = {
   detectLanguage,
   isPureGreeting,
   translateQueryToEnglish,
+  normalizeOrCorrectQuery,
   embedTexts,
   getQueryEmbedding,
   generateAnswer,

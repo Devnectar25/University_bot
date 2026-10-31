@@ -35,15 +35,89 @@ const OUT_OF_SCOPE_ANSWERS = {
       'સત્તાવાર માહિતી માટે કૃપા કરીને [ગણપત યુનિવર્સિટીની સત્તાવાર વેબસાઇટ](https://www.ganpatuniversity.ac.in) ની મુલાકાત લો અથવા યુનિવર્સિટી વહીવટીતંત્રનો સંપર્ક કરો.'
 };
 
-async function retrieve(queryText, lang = 'en') {
+const CAMPUS_INTENT_REGEX = /\b(stream|streams|course|courses|program|programs|degree|degrees|branch|branches|specialization|specializations|btech|mtech|mca|bca|bba|mba|phd|diploma|pharmacy|engineering|management|science|commerce|arts|design|architecture|nursing|physiotherapy|agriculture|marine|maritime|polytechnic|institute|institutes|faculty|faculties|department|departments|school|schools|college|colleges|admission|admissions|apply|application|form|registration|eligibility|criteria|cutoff|merit|acpc|seat|seats|intake|fee|fees|tuition|scholarship|scholarships|financial aid|hostel|hostels|room|rooms|mess|food|dining|canteen|cafeteria|bus|buses|transport|transportation|route|routes|library|sports|gym|wifi|hospital|clinic|medical|atm|bank|auditorium|infrastructure|campus|gate|address|location|map|reach|directions|located|situated|placement|placements|package|packages|salary|salaries|company|companies|recruit|recruiter|recruiters|recruitment|internship|internships|training|cdc|teacher|teachers|prof|professor|professors|hod|dean|principal|director|president|chancellor|vc|vice chancellor|staff|contact|email|phone|number|helpline|office|timing|timings|hours|exam|exams|examination|examinations|date sheet|timetable|hall ticket|admit card|result|results|grade|grades|marks|syllabus|curriculum|calendar|holiday|holidays|vacation|attendance|event|events|fest|fests|cultural|technical|club|clubs|nss|ncc|alumni|naac|nirf|rank|ranking|rankings|accreditation|affiliation|approved|aicte|ugc|pci|coa|bpharm|mpharm|llb|law|lab|labs|laboratory|laboratories|workshop|workshops|facility|facilities|amenity|amenities|founder|founded|established|establishment|motto|vision|mission|history|trust|patron|ganpatbhai|shree)\b/i;
+
+const UNIVERSITY_SCOPE_REGEX = /\b(ganpat|guni|university|campus|mehsana|kherva)\b/i;
+const EXPLICIT_TOPIC_REGEX = /\b(hostel|hostels|transport|transportation|bus|buses|library|sports|gym|canteen|mess|placement|placements|ranking|rankings|naac|nirf|scholarship|scholarships|btech|mtech|bca|mca|bba|mba|phd|diploma|pharmacy|nursing|physiotherapy|agriculture|marine|maritime|architecture|design|campus|location|reach|wifi|hospital|atm|bank)\b/i;
+const PRONOUN_FOLLOWUP_REGEX = /\b(it|its|this|that|they|their|these|those|there|same|here|cost|fee|fees|duration|eligibility|process|admission|timing|timings|structure|syllabus|cutoff|seats?)\b/i;
+
+/**
+ * Augments user queries with university context and multi-turn conversational topics.
+ * Ensures short, conversational, or follow-up questions retrieve high-confidence embeddings
+ * while preserving the original query text for prompt display and LLM answering.
+ */
+function augmentSearchQuery(queryText, history = []) {
+  if (!queryText || typeof queryText !== 'string') return queryText;
+  const trimmed = queryText.trim();
+  const lower = trimmed.toLowerCase();
+  const hasUni = UNIVERSITY_SCOPE_REGEX.test(lower);
+  const hasCampusIntent = CAMPUS_INTENT_REGEX.test(lower);
+  const hasHistory = Array.isArray(history) && history.length > 0;
+
+  // Extract previous topic if this is a genuine follow-up query (and not a topic switch)
+  let previousTopic = '';
+  if (hasHistory) {
+    const hasPronoun = PRONOUN_FOLLOWUP_REGEX.test(lower);
+    const hasExplicitTopic = EXPLICIT_TOPIC_REGEX.test(lower);
+    // If the query introduces a new explicit topic without pronouns, it is a topic switch
+    const isTopicSwitch = hasExplicitTopic && !hasPronoun;
+    const isFollowUp = !isTopicSwitch && (hasPronoun || lower.split(/\s+/).length <= 4);
+
+    if (isFollowUp) {
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].role === 'user' && history[i].content) {
+          const rawPrev = history[i].content.replace(/[?!.]/g, '').trim();
+          const cleanPrev = rawPrev
+            .replace(/\b(hi|hello|hey|namaste|please|tell me about|can you tell me|what is|what are|how about|give me details about|information on|info about)\b/gi, '')
+            .trim();
+          if (cleanPrev.length >= 2 && cleanPrev.length <= 80) {
+            previousTopic = cleanPrev;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  let augmented = trimmed;
+  if (previousTopic && !lower.includes(previousTopic.toLowerCase())) {
+    augmented += ` ${previousTopic}`;
+  }
+
+  // Add university context if missing and the query has academic intent or active conversation
+  if (!hasUni && (hasCampusIntent || hasHistory)) {
+    augmented += ' Ganpat University';
+  }
+
+  return augmented;
+}
+
+async function retrieve(queryText, lang = 'en', history = []) {
   try {
-    // If query is in Hindi or Marathi, translate search terms to English for optimal vector matching
-    const searchKeywords = lang !== 'en'
+    // If query is in Hindi or Gujarati, translate search terms to English for optimal vector matching
+    const baseKeywords = lang !== 'en'
       ? await llm.translateQueryToEnglish(queryText)
       : queryText;
 
-    const queryVec = await llm.getQueryEmbedding(searchKeywords);
-    const results = vectorStore.query(queryVec, TOP_K).filter(r => r.distance <= DISTANCE_THRESHOLD);
+    // Augment search keywords with university scope & conversation history for vector matching
+    const searchKeywords = augmentSearchQuery(baseKeywords, history);
+
+    let queryVec = await llm.getQueryEmbedding(searchKeywords);
+    let results = vectorStore.query(queryVec, TOP_K).filter(r => r.distance <= DISTANCE_THRESHOLD);
+
+    // Typo & spelling mistake fallback: If no relevant results found, attempt query normalization
+    if (!results.length) {
+      const corrected = await llm.normalizeOrCorrectQuery(baseKeywords);
+      if (corrected && corrected.toLowerCase() !== baseKeywords.toLowerCase()) {
+        const fallbackKeywords = augmentSearchQuery(corrected, history);
+        const fallbackVec = await llm.getQueryEmbedding(fallbackKeywords);
+        const fallbackResults = vectorStore.query(fallbackVec, TOP_K).filter(r => r.distance <= DISTANCE_THRESHOLD);
+        if (fallbackResults.length) {
+          results = fallbackResults;
+        }
+      }
+    }
+
     if (!results.length) return { found: false, context: '', sources: [] };
 
     const context = results.map((r, idx) => {
@@ -76,7 +150,7 @@ async function retrieve(queryText, lang = 'en') {
 async function answerQuestion(queryText, history = [], preferredLang = 'auto') {
   const lang = llm.detectLanguage(queryText, preferredLang);
 
-  // Fast path for pure greetings in English, Hindi, or Marathi
+  // Fast path for pure greetings in English, Hindi, or Gujarati
   if (llm.isPureGreeting(queryText, lang)) {
     return {
       answer: GREETING_ANSWERS[lang] || GREETING_ANSWERS.en,
@@ -86,7 +160,7 @@ async function answerQuestion(queryText, history = [], preferredLang = 'auto') {
     };
   }
 
-  const retrieval = await retrieve(queryText, lang);
+  const retrieval = await retrieve(queryText, lang, history);
   if (!retrieval.found) {
     // Strictly block out-of-the-box or non-university questions
     return {

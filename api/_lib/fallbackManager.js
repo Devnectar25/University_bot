@@ -222,9 +222,11 @@ function getCircuitStatus() {
 async function callOpenRouter(candidate, messages, temperature, maxTokens, timeoutMs, label) {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
+    keepalive: true,
     headers: {
       'Authorization': `Bearer ${candidate.apiKey}`,
       'Content-Type': 'application/json',
+      'Connection': 'keep-alive',
       'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
       'X-Title': 'Ganpat University Chatbot'
     },
@@ -310,7 +312,11 @@ async function callGoogleGemini(candidate, messages, temperature, maxTokens, tim
 
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    keepalive: true,
+    headers: {
+      'Content-Type': 'application/json',
+      'Connection': 'keep-alive'
+    },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(timeoutMs)
   });

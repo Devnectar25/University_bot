@@ -7,6 +7,7 @@ window.GUNi.ChatFooter = function ChatFooter({
     inputText,
     setInputText,
     onSend,
+    onStopGenerating,
     isSending,
     t,
     currentLanguage
@@ -81,7 +82,7 @@ window.GUNi.ChatFooter = function ChatFooter({
         return () => {
             try {
                 recognition.abort();
-            } catch {}
+            } catch { }
         };
     }, [currentLanguage, t]);
 
@@ -94,7 +95,7 @@ window.GUNi.ChatFooter = function ChatFooter({
         if (isListening) {
             try {
                 recognitionRef.current.stop();
-            } catch {}
+            } catch { }
             setIsListening(false);
         } else {
             try {
@@ -114,7 +115,7 @@ window.GUNi.ChatFooter = function ChatFooter({
         if (isListening && recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
-            } catch {}
+            } catch { }
         }
         onSend();
     };
@@ -145,12 +146,23 @@ window.GUNi.ChatFooter = function ChatFooter({
                         onKeyDown={handleKeyDown}
                         disabled={isSending}
                     />
+                    {inputText && !isSending && (
+                        <button
+                            type="button"
+                            className="input-clear-btn"
+                            title={t?.clearInput || "Clear input"}
+                            aria-label={t?.clearInput || "Clear input"}
+                            onClick={() => setInputText('')}
+                        >
+                            <i className="bi bi-x"></i>
+                        </button>
+                    )}
                     <button
                         type="button"
                         className={`input-action-btn${isListening ? ' listening' : ''}`}
                         id="mic-btn"
-                        title={isListening ? 'Stop listening' : 'Voice input'}
-                        aria-label="Voice input"
+                        title={isListening ? (t?.stopListening || 'Stop listening') : (t?.voiceInput || 'Voice input')}
+                        aria-label={isListening ? (t?.stopListening || 'Stop listening') : (t?.voiceInput || 'Voice input')}
                         onClick={handleMicClick}
                     >
                         <i
@@ -158,19 +170,32 @@ window.GUNi.ChatFooter = function ChatFooter({
                             id="mic-icon"
                         ></i>
                     </button>
-                    <button
-                        type="submit"
-                        className="send-btn"
-                        id="send-btn"
-                        aria-label="Send message"
-                        disabled={isSending || !inputText.trim()}
-                        title={isSending ? 'Waiting for answer…' : 'Send message'}
-                    >
-                        <i className="bi bi-send-fill" style={{ pointerEvents: 'none' }}></i>
-                    </button>
+                    {isSending ? (
+                        <button
+                            type="button"
+                            className="send-btn stop-btn"
+                            id="stop-btn"
+                            aria-label={t?.stopGenerating || "Stop generating"}
+                            title={t?.stopGenerating || "Stop generating"}
+                            onClick={onStopGenerating}
+                        >
+                            <i className="bi bi-stop-fill" style={{ pointerEvents: 'none' }}></i>
+                        </button>
+                    ) : (
+                        <button
+                            type="submit"
+                            className="send-btn"
+                            id="send-btn"
+                            aria-label={t?.sendMessage || "Send message"}
+                            disabled={!inputText.trim()}
+                            title={t?.sendMessage || "Send message"}
+                        >
+                            <i className="bi bi-send-fill" style={{ pointerEvents: 'none' }}></i>
+                        </button>
+                    )}
                 </div>
                 <div className="input-hint">
-                    Powered By{' '}
+                    {t?.poweredBy || 'Powered By'}{' '}
                     <a
                         href="https://devnectar.in"
                         target="_blank"

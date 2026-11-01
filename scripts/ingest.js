@@ -141,10 +141,21 @@ function parseWorkbook(filePath) {
 }
 
 // Splits long documents into overlapping chunks, maintaining header context across chunks
+// with semantic boundary detection and Markdown table integrity
 function chunkDocument(doc) {
   const { text, metadata, headerPrefix = '' } = doc;
   if (text.length <= MAX_CHARS) {
     return [{ text, metadata: { ...metadata, chunk_index: 0, total_chunks: 1, char_length: text.length } }];
+  }
+
+  // Detect if document has a Markdown table structure
+  const lines = text.split('\n');
+  let tableHeader = '';
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (lines[i].trim().startsWith('|') && lines[i + 1].trim().startsWith('|---')) {
+      tableHeader = lines[i].trim() + '\n' + lines[i + 1].trim() + '\n';
+      break;
+    }
   }
 
   const chunks = [];
@@ -153,18 +164,51 @@ function chunkDocument(doc) {
     let end = start + MAX_CHARS;
     let chunkText = text.slice(start, end);
 
-    if (end < text.length && chunkText.includes(' ')) {
-      const lastSpace = chunkText.lastIndexOf(' ');
-      if (lastSpace > MAX_CHARS * 0.6) {
-        end = start + lastSpace + 1;
+    if (end < text.length) {
+      // 1. Try splitting at paragraph boundary
+      const lastDoubleNewline = chunkText.lastIndexOf('\n\n');
+      if (lastDoubleNewline > MAX_CHARS * 0.5) {
+        end = start + lastDoubleNewline + 2;
         chunkText = text.slice(start, end);
+      } else {
+        // 2. Try splitting at table row or line break
+        const lastNewline = chunkText.lastIndexOf('\n');
+        if (lastNewline > MAX_CHARS * 0.55) {
+          end = start + lastNewline + 1;
+          chunkText = text.slice(start, end);
+        } else {
+          // 3. Try splitting at sentence boundary
+          const lastSentence = Math.max(
+            chunkText.lastIndexOf('. '),
+            chunkText.lastIndexOf('? '),
+            chunkText.lastIndexOf('! ')
+          );
+          if (lastSentence > MAX_CHARS * 0.6) {
+            end = start + lastSentence + 2;
+            chunkText = text.slice(start, end);
+          } else {
+            // 4. Fall back to word boundary
+            const lastSpace = chunkText.lastIndexOf(' ');
+            if (lastSpace > MAX_CHARS * 0.6) {
+              end = start + lastSpace + 1;
+              chunkText = text.slice(start, end);
+            }
+          }
+        }
       }
     }
 
     // Preserve the contextual header if chunk starts mid-text
-    const fullText = (start > 0 && headerPrefix && !chunkText.startsWith(headerPrefix))
-      ? (headerPrefix + chunkText.trim())
-      : chunkText.trim();
+    let fullText = chunkText.trim();
+    if (start > 0) {
+      // If table row broke across chunks, prepend table header for column context
+      if (tableHeader && fullText.startsWith('|') && !fullText.startsWith(tableHeader.trim())) {
+        fullText = tableHeader + fullText;
+      }
+      if (headerPrefix && !fullText.startsWith(headerPrefix)) {
+        fullText = headerPrefix + fullText;
+      }
+    }
 
     chunks.push({ text: fullText, metadata: { ...metadata, chunk_index: chunks.length } });
     if (end >= text.length) break;
@@ -176,6 +220,56 @@ function chunkDocument(doc) {
     c.metadata.char_length = c.text.length;
   }
   return chunks;
+}
+
+// Automated Pre-Ingest URL Health Checker
+async function checkLinkHealth(docs) {
+  const urls = [...new Set(docs.map(d => d.metadata && d.metadata.url).filter(Boolean))];
+  if (!urls.length) return;
+
+  console.log(`\n🔍 [Link Health] Validating ${urls.length} unique citation URLs...`);
+  let validCount = 0;
+  const broken = [];
+
+  const batchSize = 10;
+  for (let i = 0; i < urls.length; i += batchSize) {
+    const batch = urls.slice(i, i + batchSize);
+    await Promise.all(batch.map(async (url) => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+        let res;
+        try {
+          res = await fetch(url, {
+            method: 'HEAD',
+            signal: controller.signal,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GUNIBotHealthChecker/2.0' }
+          });
+        } catch {
+          // If HEAD fails, fall back to GET
+          res = await fetch(url, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GUNIBotHealthChecker/2.0' }
+          });
+        }
+        clearTimeout(timeout);
+        if (res && res.status >= 200 && res.status < 400) {
+          validCount++;
+        } else {
+          broken.push({ url, status: res ? res.status : 'ERR' });
+        }
+      } catch (err) {
+        broken.push({ url, error: err.message });
+      }
+    }));
+  }
+
+  console.log(`  ✓ ${validCount} URLs verified active & reachable.`);
+  if (broken.length > 0) {
+    console.warn(`  ⚠️ ${broken.length} URL(s) returned warning:`);
+    broken.forEach(b => console.warn(`     - ${b.url} (${b.status || b.error})`));
+  }
 }
 
 function chunkId(meta) {
@@ -234,6 +328,9 @@ async function main() {
     process.exit(1);
   }
 
+  // Pre-ingest link health verification
+  await checkLinkHealth(allDocs);
+
   console.log(`Total parsed entries: ${allDocs.length} -> Generated ${chunks.length} chunks.`);
   console.log(`Generating embeddings via OpenRouter in batches...`);
 
@@ -264,6 +361,12 @@ async function main() {
   console.log(`  - Dimensions: ${dim}`);
   console.log(`  - Vector cache: ${binPath} (${binSizeMb} MB)`);
   console.log(`  - Metadata: ${metaPath}`);
+
+  // Flush Redis cache to invalidate outdated FAQ responses
+  try {
+    const redisCache = require('../api/_lib/redisCache');
+    await redisCache.flush();
+  } catch { }
 }
 
 main().catch(err => {

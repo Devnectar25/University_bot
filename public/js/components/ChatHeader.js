@@ -9,8 +9,8 @@ window.GUNi.ChatHeader = function ChatHeader({ onToggleSidebar, currentLanguage,
                     type="button"
                     className="icon-btn menu"
                     id="sidebar-toggle"
-                    title="Toggle sidebar (Ctrl+B)"
-                    aria-label="Toggle sidebar"
+                    title={t?.toggleSidebar || "Toggle sidebar"}
+                    aria-label={t?.toggleSidebar || "Toggle sidebar"}
                     onClick={onToggleSidebar}
                 >
                     <i className="bi bi-layout-sidebar"></i>
